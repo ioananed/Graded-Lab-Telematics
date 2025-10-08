@@ -50,15 +50,14 @@ class Ship:
  
     # Function to send a message both to stderr and to the captain via pipe
     def speak(self, msg: str):
-        if self.pipe_fd is not None:
-            try:
-                # Write the message to the pipe, encoding it as bytes + newline
-                os.write(self.pipe_fd, (msg + "\n").encode())
-            except OSError as e:
-                # If pipe fails (e.g., captain died), just print the error to stderr
-                print(f"Pipe write failed: {e}", file=sys.stderr)
-        # Always print locally as well
-        print(msg, file=sys.stderr)
+        """
+        Send short status messages ('OK', 'NOK', 'exit') to the captain via stdout,
+        and everything else to stderr for local debugging.
+        """
+        if msg in ["OK", "NOK", "exit"]:
+            print(msg, flush=True)  # this goes to the captain
+        else:
+            print(msg, file=sys.stderr, flush=True)  # debug output only
 
  
     # Default string representation of the ship (used in debugging)
@@ -138,21 +137,17 @@ class Ship:
                 elif movement == "left": new_x -= 1
 
                 # check destination
-                print("print1")
                 if self.mapa.can_sail(new_x, new_y):
                     self.mapa.remove_ship(x, y)
                     self.pos = (new_x, new_y)
                     self.mapa.set_ship(new_x, new_y)
                     self.food -= 5
-                    print("print1")
                     self.speak("OK")
                     #print(f"Ship {self.shipId} moved to {self.pos}", file=sys.stderr)
-                    print("print2")
                     if ursula_pipe:
                         try:
                             move_msg = f"{self.pid},MOVE,{self.pos[0]},{self.pos[1]},{self.food},{self.gold}"
                             send_to_ursula(move_msg, ursula_pipe)
-                            print("print4")
                         except OSError as e:
                             print(f"Ship {self.shipId}: Error sending MOVE to Ursula: {e}", file=sys.stderr)
                     
@@ -171,7 +166,7 @@ def send_to_ursula(message, ursula_pipe):
             with open(ursula_pipe, "w") as fifo:
                 fifo.write(message + "\n")
                 fifo.flush()
-            #print(f"Ships: sent message to Ursula: {message}", file=sys.stderr)
+            print(f"Captain: sent message to Ursula: {message}", file=sys.stderr)
         except OSError as e:
             print(f"Ship {ship.pid} failed to notify Ursula on terminate: {e}", file=sys.stderr)
 
@@ -226,7 +221,7 @@ if __name__ == "__main__":
     ap.add_argument("--random", type=int, nargs=2, metavar=("N", "s1"), help="Random mode (N steps, s1 seconds)")
     ap.add_argument("--captain", action="store_true", help="Captain controls the ship")
     ap.add_argument("--pipe", type=int, help="Pipe file descriptor from captain (for IPC)")
-    ap.add_argument("--ursula", type=str, help="Pipe for ursula.py, ursula_pipe")
+    ap.add_argument("--ursula", type=str, help="Pipe for ursula.py,ursula_pipe")
 
     args = ap.parse_args()
     
@@ -249,7 +244,7 @@ if __name__ == "__main__":
         ship.speed = args.random[1]
 
     # Starting message
-    #print(f"Ship {ship.shipId} started with PID {ship.pid}", file=sys.stderr, flush=True)
+    print(f"Ship {ship.shipId} started with PID {ship.pid}", file=sys.stderr, flush=True)
     # if ursula_pipe:
     #     send_to_ursula(f"{ship.pid},INIT,{ship.pos[0]},{ship.pos[1]},{ship.food},{ship.gold}", ursula_pipe)
     if ursula_pipe:
