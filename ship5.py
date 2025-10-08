@@ -1,4 +1,4 @@
-
+ 
 # Design of Telematics Systems 2025-26
 # Universidad Carlos III de Madrid
 #
@@ -90,7 +90,7 @@ class Ship:
             self.pos = (self.pos[0] + dx, self.pos[1] + dy)  # Update position
             self.mapa.set_ship(self.pos[0], self.pos[1])      # Mark on new cell
             self.food -= 5  # Food cost per move
-
+            
             # Determine the type of terrain we landed on
             where = self.mapa.get_cell_type(self.pos[0], self.pos[1])
             if where == Map.BAR:
@@ -161,15 +161,16 @@ class Ship:
 
 
 def send_to_ursula(message, ursula_pipe):
-    try:
-        if not ursula_pipe:
-            return
-        with open(ursula_pipe, "w") as fifo:
-            fifo.write(message + "\n")
-            fifo.flush()
-    except OSError as e:
-        print(f"Error happened: {e}", file=sys.stderr)
-        
+    if ursula_pipe:
+        try:
+            with open(ursula_pipe, "w") as fifo:
+                fifo.write(message + "\n")
+                fifo.flush()
+            print(f"Captain: sent message to Ursula: {message}", file=sys.stderr)
+        except OSError as e:
+            print(f"Ship {ship.pid} failed to notify Ursula on terminate: {e}", file=sys.stderr)
+
+    sys.exit(ship.gold)
 # SIGNAL HANDLERS
 
 # They manage how the ship reacts to external signals sent by the captain
@@ -244,16 +245,20 @@ if __name__ == "__main__":
 
     # Starting message
     print(f"Ship {ship.shipId} started with PID {ship.pid}", file=sys.stderr, flush=True)
+    # if ursula_pipe:
+    #     send_to_ursula(f"{ship.pid},INIT,{ship.pos[0]},{ship.pos[1]},{ship.food},{ship.gold}", ursula_pipe)
     if ursula_pipe:
-            init_msg = f"{ship.pid},INIT,{ship.pos[0]},{ship.pos[1]},{ship.food},{ship.gold}"
-            print(f"mensaje de {ship.pid} :{init_msg}")
-            try:
-                with open(ursula_pipe, "w") as fifo:
-                    fifo.write(init_msg + "\n")
-                    fifo.flush()
-                    print("enviado ship")
-            except OSError as e:
-                print(f"Error happened: {e}", file=sys.stderr)
+        init_msg = f"{ship.pid},INIT,{ship.pos[0]},{ship.pos[1]},{ship.food},{ship.gold}"
+        send_to_ursula(init_msg, ursula_pipe)
+        print("PRUEBA")
+        # print(f"mensaje de {ship.pid} :{init_msg}")
+        # try:
+        #     with open(ursula_pipe, "w") as fifo:
+        #         fifo.write(init_msg + "\n")
+        #         fifo.flush()
+        #         print("enviado ship")
+        # except OSError as e:
+        #     print(f"Error happened: {e}", file=sys.stderr)
 
    
     # INSTALLATION OF SIGNAL HANDLERS
@@ -285,13 +290,15 @@ if __name__ == "__main__":
     sys.exit(ship.gold)
     
     if ursula_pipe:
-        try:
-            term_msg = f"{ship.pid},TERMINATE\n"
-            with open(ursula_pipe, "w") as fifo:
-                fifo.write(term_msg)
-                fifo.flush()
-        except OSError as e:
-            print(f"Error happened: {e}", file=sys.stderr)
+        term_msg = f"{ship.pid},TERMINATE"
+        send_to_ursula(term_msg, ursula_pipe)
+        # try:
+        #     term_msg = f"{ship.pid},TERMINATE\n"
+        #     with open(ursula_pipe, "w") as fifo:
+        #         fifo.write(term_msg)
+        #         fifo.flush()
+        # except OSError as e:
+        #     print(f"Error happened: {e}", file=sys.stderr)
            
     sys.exit(ship.gold)
 

@@ -15,7 +15,7 @@ class Ursula:
         #si no existe el named pipe, fifo, lo crea
         try:
             if not os.path.exists(self.ursula_pipe):
-                os.mkfifo(self.prsula_pipe)
+                os.mkfifo(self.ursula_pipe)
                 print(f"Created named pipe '{self.ursula_pipe}'", file=sys.stderr)
             else:
                 print(f"Named pipe '{self.ursula_pipe}' already exists", file=sys.stderr)
@@ -159,32 +159,61 @@ class Ursula:
             print("Ursula: All captains and ships have terminated.", file=sys.stderr)
             self.running = False
     
-    def run(self):
-        #to read the named pipe
-        self.create_named_pipe()
+    # def run(self):
+    #     #to read the named pipe
+    #     self.create_named_pipe()
         
-        print(f"Ursula: Waiting for messages on '{self.ursula_pipe}'...", file=sys.stderr)
-        print(f"Ursula: Initial gold: {self.treasure} ", file=sys.stderr)
+    #     print(f"Ursula: Waiting for messages on '{self.ursula_pipe}'...", file=sys.stderr)
+    #     print(f"Ursula: Initial gold: {self.treasure} ", file=sys.stderr)
                  
-        try:
-            pipe=open(self.ursula_pipe, 'r')
-            while (self.running):
-                print("open pipe", file=sys.stderr)
-                message = pipe.readline()
-                if not message:
-                    continue
-                print(f"mwnsaje recibido:{message}")
-                if message:
-                    self.process_message(message)
-            pipe.close(pipe)
-        except OSError as e:
-            print(f"Error happened: {e}", file=sys.stderr)
+    #     try:
+    #         pipe=open(self.ursula_pipe, 'r')
+    #         while (self.running):
+    #             print("open pipe", file=sys.stderr)
+    #             message = pipe.readline()
+                
+    #             if not message:
+    #                 continue
+    #             print(f"mensaje recibido:{message}")
+    #             if message:
+    #                 self.process_message(message)
+    #         pipe.close(pipe)
+    #         print("Ursula: Shutting down.", file=sys.stderr)
+    #     except OSError as e:
+    #         print(f"Error happened: {e}", file=sys.stderr)
+    #         try:
+    #             if os.path.exists(self.ursula_pipe):
+    #                 os.unlink(self.ursula_pipe)
+    #                 print(f"Ursula: Removed named pipe '{self.ursula_pipe}'", file=sys.stderr)
+    #         except OSError as e:
+    #             print(f"Error happened: {e}", file=sys.stderr)
+    def run(self):
+        self.create_named_pipe()
+        print(f"Ursula: Waiting for messages on '{self.ursula_pipe}'...", file=sys.stderr)
+        print(f"Ursula: Initial gold: {self.treasure}", file=sys.stderr)
+
+        while self.running:
             try:
-                if os.path.exists(self.ursula_pipe):
-                    os.unlink(self.ursula_pipe)
-                    print(f"Ursula: Removed named pipe '{self.ursula_pipe}'", file=sys.stderr)
+                # Blocks here until some writer opens the FIFO
+                with open(self.ursula_pipe, "r") as pipe:
+                    for line in pipe:              # reads until EOF (all writers closed)
+                        line = line.strip()
+                        if not line:
+                            continue
+                        # print(f"Ursula: received: {line}", file=sys.stderr)  # optional debug
+                        self.process_message(line)
+                # Reaching here means EOF (all writers closed). Loop will reopen and block again.
             except OSError as e:
                 print(f"Error happened: {e}", file=sys.stderr)
+
+        # Optional cleanup when self.running becomes False
+        try:
+            if os.path.exists(self.ursula_pipe):
+                os.unlink(self.ursula_pipe)
+                print(f"Ursula: Removed named pipe '{self.ursula_pipe}'", file=sys.stderr)
+        except OSError as e:
+            print(f"Error happened: {e}", file=sys.stderr)
+
 
 def main():
     if len(sys.argv) != 2:

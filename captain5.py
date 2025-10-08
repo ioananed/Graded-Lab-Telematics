@@ -1,5 +1,5 @@
 import map
-import os
+import os 
 import argparse, sys, signal
 from map import Map   #lo añadí pq si no no te deja entrar a argumento map
 
@@ -23,7 +23,7 @@ def send_to_ursula(message, ursula_pipe):
         try:
             with open(ursula_pipe, "w") as fifo:
                 fifo.write(message + "\n")
-                #fifo.flush()
+                fifo.flush()
             print(f"Captain: sent message to Ursula: {message}", file=sys.stderr)
         except OSError as e:
             print(f"Error happened: {e}", file=sys.stderr)
@@ -245,9 +245,9 @@ def main():
                     "--id", str(shipId),
                     "--map", args.map,
                     "--pos", str(x), str(y),
-                    "--captain",  # tells the ship to run in captain-controlled mode,
-                    "--ursula", "ursula_pipe"
-                ]
+                    "--captain",
+                ] + (["--ursula", args.ursula] if args.ursula else [])
+                
                 os.execvp("python3", cmd)    #child executes ship.py, execvp replaces the process
             except OSError as e:
                 print(f"Error happened: {e}", file=sys.stderr)
