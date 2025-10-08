@@ -4,8 +4,8 @@ import random
 import signal
 
 class Ursula:
-    def __init__(self, pipe_name):
-        self.pipe_name = pipe_name
+    def __init__(self, ursula_pipe):
+        self.ursula_pipe = ursula_pipe
         self.treasure = 100
         self.captains = {} 
         self.ships = {}    
@@ -14,11 +14,11 @@ class Ursula:
     def create_named_pipe(self):
         #si no existe el named pipe, fifo, lo crea
         try:
-            if not os.path.exists(self.pipe_name):
-                os.mkfifo(self.pipe_name)
-                print(f"Created named pipe '{self.pipe_name}'", file=sys.stderr)
+            if not os.path.exists(self.ursula_pipe):
+                os.mkfifo(self.prsula_pipe)
+                print(f"Created named pipe '{self.ursula_pipe}'", file=sys.stderr)
             else:
-                print(f"Named pipe '{self.pipe_name}' already exists", file=sys.stderr)
+                print(f"Named pipe '{self.ursula_pipe}' already exists", file=sys.stderr)
         except OSError as e:
             print(f"Error happened: {e}", file=sys.stderr)
             sys.exit(1)
@@ -163,11 +163,11 @@ class Ursula:
         #to read the named pipe
         self.create_named_pipe()
         
-        print(f"Ursula: Waiting for messages on '{self.pipe_name}'...", file=sys.stderr)
+        print(f"Ursula: Waiting for messages on '{self.ursula_pipe}'...", file=sys.stderr)
         print(f"Ursula: Initial gold: {self.treasure} ", file=sys.stderr)
                  
         try:
-            pipe=open(self.pipe_name, 'r')
+            pipe=open(self.ursula_pipe, 'r')
             while (self.running):
                 print("open pipe", file=sys.stderr)
                 message = pipe.readline()
@@ -180,19 +180,19 @@ class Ursula:
         except OSError as e:
             print(f"Error happened: {e}", file=sys.stderr)
             try:
-                if os.path.exists(self.pipe_name):
-                    os.unlink(self.pipe_name)
-                    print(f"Ursula: Removed named pipe '{self.pipe_name}'", file=sys.stderr)
+                if os.path.exists(self.ursula_pipe):
+                    os.unlink(self.ursula_pipe)
+                    print(f"Ursula: Removed named pipe '{self.ursula_pipe}'", file=sys.stderr)
             except OSError as e:
                 print(f"Error happened: {e}", file=sys.stderr)
 
 def main():
     if len(sys.argv) != 2:
-        print("Usage: python3 ursula.py <pipe_name>", file=sys.stderr)
+        print("Usage: python3 ursula.py <ursula_pipe>", file=sys.stderr)
         sys.exit(1)
     
-    pipe_name = sys.argv[1]
-    ursula = Ursula(pipe_name)
+    ursula_pipe = sys.argv[1]
+    ursula = Ursula(ursula_pipe)
     ursula.run()
 
 if __name__ == "__main__":
