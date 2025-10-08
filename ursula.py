@@ -78,7 +78,7 @@ class Ursula:
         
         self.running = False
     
-    def process_message(self, message):     #es para lo de INIT y eso del principio
+    def process_message(self, message):
         #procesa los mensajes del captain
         try:
             parts = message.strip().split(',')
@@ -170,7 +170,8 @@ class Ursula:
     #         pipe=open(self.ursula_pipe, 'r')
     #         while (self.running):
     #             print("open pipe", file=sys.stderr)
-    #             message = pipe.readline().strip()
+    #             message = pipe.readline()
+                
     #             if not message:
     #                 continue
     #             print(f"mensaje recibido:{message}")
@@ -186,7 +187,7 @@ class Ursula:
     #                 print(f"Ursula: Removed named pipe '{self.ursula_pipe}'", file=sys.stderr)
     #         except OSError as e:
     #             print(f"Error happened: {e}", file=sys.stderr)
-    def run(self):      #para ejecutar la clase ursula
+    def run(self):
         self.create_named_pipe()
         print(f"Ursula: Waiting for messages on '{self.ursula_pipe}'...", file=sys.stderr)
         print(f"Ursula: Initial gold: {self.treasure}", file=sys.stderr)

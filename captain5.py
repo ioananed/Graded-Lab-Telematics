@@ -24,7 +24,7 @@ def send_to_ursula(message, ursula_pipe):
             with open(ursula_pipe, "w") as fifo:
                 fifo.write(message + "\n")
                 fifo.flush()
-            #print(f"Captain: sent message to Ursula: {message}", file=sys.stderr)
+            print(f"Captain: sent message to Ursula: {message}", file=sys.stderr)
         except OSError as e:
             print(f"Error happened: {e}", file=sys.stderr)
 
@@ -129,7 +129,7 @@ def handler_sigchld(signo, frame):      #ESTO SALE DISTINTO
 #PIPES
 def send_command(shipId, command):
     global mapa   #to be able to access map
-    shipId_dict = ship_dict.get(shipId) 
+    shipId_dict = ship_dict.get(shipId)     #get each ship Id del dictionary
     if not shipId_dict:     #if ship doesnt exist, return
         print("Invalid ship ID.", file=sys.stderr)
         return
@@ -142,7 +142,6 @@ def send_command(shipId, command):
     #Mover el barco --> ships
     #Simulate movement to check for collision --> captain has to coordinate all ships. Cannot be only in ships.py bc a ship doesnt know the position of other ships
     # new position of ship
-
     x, y = shipId_dict["pos"]        #Usas el shipId del diccionario para saber de que ship hablas. x, y son la posicion inicial del ship q coge del dict y luego la actualiza sumando o restando al mover
     new_x , new_y = x, y
     if command == "up": new_y += 1
@@ -150,7 +149,6 @@ def send_command(shipId, command):
     elif command == "right": new_x += 1
     elif command == "left": new_x -= 1
     new_pos = (new_x, new_y)    #esta es la pos final del ship, pero no la actualiza al ship, sino q es para verificar si se puede mover ahí el barco
-
 
     print(f"Sending action {command} to ship {shipId}", file=sys.stderr)
     sys.stderr.flush()
@@ -171,16 +169,13 @@ def send_command(shipId, command):
         print(f"Ship {shipId} new position: {new_pos}", file=sys.stderr)
         sys.stderr.flush()
     try:  
-        print("print1")
         os.write(shipId_dict["w_pipe"], f"{command}\n".encode())
         #envía el command (up, down, left, right) desde w_pipe. utiliza lo sel ship_dict pq necesita saber el id y todo del barco del q envía la info
-        print("print2")
         response = os.read(shipId_dict["r_pipe"], 1024).decode().strip() #recibe la respuesta del ship (Ok or NOK). 1024 es pq lee hasta 1024 bytes
-        print("print3")
     except OSError as e:
         print(f"Error happened: {e}", file=sys.stderr)
         return
-    print("print4")
+
     if response == "OK":  #ship moved to desired pos, everything correctly
         mapa.remove_ship(x, y)  #quita ell ship de dnd estaba antes
         mapa.set_ship(new_pos[0], new_pos[1])   #pone el ship en la posicion nueva
@@ -214,7 +209,7 @@ def main():
     
 
     signal.signal(signal.SIGINT, handler_sigint)
-    #signal.signal(signal.SIGCHLD, handler_sigchld)
+    signal.signal(signal.SIGCHLD, handler_sigchld)
 
     print(f"Captain: {args.name} PID {os.getpid()}", file=sys.stderr)   #file=sys.stderr is to handle errors
 
@@ -250,8 +245,9 @@ def main():
                     "--id", str(shipId),
                     "--map", args.map,
                     "--pos", str(x), str(y),
-                    "--captain", "--ursula", "ursula_pipe"
-                ]
+                    "--captain",
+                ] + (["--ursula", args.ursula] if args.ursula else [])
+                
                 os.execvp("python3", cmd)    #child executes ship.py, execvp replaces the process
             except OSError as e:
                 print(f"Error happened: {e}", file=sys.stderr)
@@ -260,7 +256,6 @@ def main():
         else:  #parent process
             try:
                 #print(f"Ship PID: {child}", file=sys.stderr)
-                sys.stderr.flush()
                 children.append((shipId, child))
 
                 #PIPES
